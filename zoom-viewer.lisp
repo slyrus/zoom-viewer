@@ -107,5 +107,9 @@
       (draw-text* pane "ZOOMABILITY!" 200 200))))
 
 (defun zoom-viewer-main ()
-  (run-frame-top-level (make-application-frame 'zoom-viewer-app)))
+  (let ((frame (make-application-frame 'zoom-viewer-app)))
+    (values frame
+            (bt:make-thread
+             (lambda ()
+               (run-frame-top-level frame))))))
 
