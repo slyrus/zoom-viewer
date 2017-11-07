@@ -47,8 +47,7 @@
          :value-changed-callback 'zoom-y-callback))
   (:layouts
    (default (vertically ()
-              (scrolling ()
-                 app)
+              app
               (labelling (:label "Zoom X")
                 zoom-x)
               (labelling (:label "Zoom Y")
