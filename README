@@ -1,0 +1,91 @@
+
+The goal of this project is to explore various methods for scrolling
+and zooming drawable objects in CLIM, particularly McCLIM.
+
+I would like to see a way in which drawable objects (points,
+rectangles, circles, polygons, images, etc...) could be drawn onto
+sheets such that following the initial drawing, a notion of scrolling
+and zooming could be applied to the drawable objects.
+
+There exists a notion of scrolling view the scroller-pane class and
+the "scrolling" pane types. If I naively implement a zoom-pane as the
+child of a scrolling pane, things sort of work, but as we scroll the
+window, drawing gets messed up if the window is zoomed away from the
+identity transformation (x-zoom and y-zoom both being 1).
+
+We should probably consider what sort of objects we'd like to
+display. In the same window, it would be desirable to have:
+
+ 1. drawable objects that do not scroll or zoom -- fixed objects, for
+ example a navigation interface that is always present at a fixed
+ location in a window, even if other content in the window changes in
+ response to the scroll/zoom settings of the window. (Note that I'm
+ using the term window rather loosely here, this probably corresponds
+ more closely to the CLIM notion of a sheet.)
+
+ 2. scrollable/zoomable objects. Imagine a rectangle with coordinates
+ ((100, 100) (200, 200)), this would be drawn as a rectangle with the
+ left-top corner at 100, 100 and the right-bottom corner at 200,
+ 200. If the window/sheet/pane were scrolled, the rectangle would move
+ and be drawn as in the current scroller-pane. If the
+ window/sheet/pane were zoomed, The rectangle would be drawn at the
+ appropriate location, at the appropriate zoom level, so if we had an
+ x-zoom and a y-zoom of 3 and 2, respectively, the rectangle would
+ appear as 300 pixels wide and 200 pixels high, drawn at the
+ appropriate (in this case a right-top corner of (300, 200), subject
+ to the scrolling position).
+
+ 3 and 4. Do we want items that are zoomable but not scrollable, or vice
+ versa? We probably at least want scrollable items that can be shown
+ at a fixed size, independent of the zoom level. Do we want
+ fixed-location with independent zooming? Maybe.
+
+So can think of drawable items in the native window/sheet/pane
+coordinates and in an underlying scrollable/zoomable window/sheet/pane
+and it would be nice to have things in both systems in the same
+window/sheet/pane.
+
+Furthermore, it would be desirable to have the drawable objects have
+the ability to draw themselves and know the parameters of drawing
+(window coordinates, scrollable/zoomable coordinates/settings), such
+that they can draw themselves appropriately. Imagine an axis that
+needs to draw tick marks at appropriate points. If we're zoomed out
+we're going to want fewer tick marks. Or there could be child drawing
+objects that are only drawn when zoomed in.
+
+The output-record machinery would seem to provide much support that
+could be used to achieve these ends. However, it's not entirely clear
+how best to use the output-record machinery. I'd like to leverage as
+much existing code as possible, that is both to make minimal changes
+to the existing code and write as little new code as possible. I'd
+certainly like to use the existing medium-drawing routines and the
+existing backends. Ideally we wouldn't change any of that
+code. Perhaps we can use the existing drawing routines as well, but
+then we need some way to capture and utilize the information regarding
+the positioning and sizing of the various drawn objects. One obvious
+approach would be to extend the output-records. The challenge to this
+is that the output-records are created down in the guts of the
+medium-draw-<object>* functions down in recording.lisp.
+
+climi:application-pane is a subclass of clim-stream-pane and
+clim-stream-pane in turn is a subclass of
+standard-output-recording-stream and it is the medium-draw-<object>*
+methods that specialize on standard-output-recording-stream (or more
+precisely, it is their :around methods) that create the output
+records. So if we want to make new output records, we have a few
+options:
+
+ 1. We can use new draw-<shape> routines that don't (just) call the
+    standard medium-draw-<shape> routines.
+
+    e.g. draw-zoomable-rectangle*
+
+
+2. Use the existing draw-<shape> routines but add a new kind of
+output-record that sets the appropriate position/scale of the drawn
+object at the time of output replay.
+
+3. Use multiple sheets, e.g., one sheet for window coordinates, and
+another for a "global" coordinate system that gets mapped onto the
+window's coordinate system via the appropriate scroll/zoom-based
+transform.
