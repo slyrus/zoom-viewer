@@ -4,7 +4,7 @@
 
 (in-package #:zoom-viewer)
 
-(defclass zoom-pane (application-pane)
+(defclass zoom-pane (application-pane clime:always-repaint-background-mixin)
   ((zoom-x-level :initform 1.0d0 :accessor zoom-x-level)
    (zoom-y-level :initform 1.0d0 :accessor zoom-y-level)))
 
@@ -12,19 +12,23 @@
   (let ((frame (pane-frame gadget)))
     (let ((pane (find-pane-named frame 'app)))
       (setf (zoom-x-level pane) scale)
+      (let* ((tr (make-scaling-transformation (zoom-x-level pane) (zoom-y-level pane))))
+        (climi::%%set-sheet-native-transformation tr pane))
       (repaint-sheet pane +everywhere+))))
 
 (defun zoom-y-callback (gadget scale)
   (let ((frame (pane-frame gadget)))
     (let ((pane (find-pane-named frame 'app)))
       (setf (zoom-y-level pane) scale)
+      (let* ((tr (make-scaling-transformation (zoom-x-level pane) (zoom-y-level pane))))
+        (climi::%%set-sheet-native-transformation tr pane))
       (repaint-sheet pane +everywhere+))))
 
 (define-application-frame zoom-viewer-app ()
   ()
   (:panes
    (app zoom-pane
-        :height 4096 :width 4096
+        :height 2048 :width 2048
         :display-function 'display-zoom-viewer)
    (int :interactor :height 200 :width 600)
    (zoom-x :slider
@@ -47,7 +51,8 @@
          :value-changed-callback 'zoom-y-callback))
   (:layouts
    (default (vertically ()
-              app
+              (scrolling ()
+                app)
               (labelling (:label "Zoom X")
                 zoom-x)
               (labelling (:label "Zoom Y")
@@ -66,9 +71,9 @@
   (declare (optimize (debug 3)))
   (let* ((tr (make-scaling-transformation (zoom-x-level pane) (zoom-y-level pane)))
          (original-transform (sheet-native-transformation pane)))
-    (climi::%%set-sheet-native-transformation tr pane)
+    #+nil (climi::%%set-sheet-native-transformation tr pane)
     (call-next-method)
-    (climi::%%set-sheet-native-transformation original-transform pane)))
+    #+nil (climi::%%set-sheet-native-transformation original-transform pane)))
 
 (defun draw-zoom-polygon (sheet x y sides radius
                              &rest args
