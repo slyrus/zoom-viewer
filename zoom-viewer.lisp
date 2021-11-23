@@ -12,16 +12,24 @@
   (let ((frame (pane-frame gadget)))
     (let ((pane (find-pane-named frame 'app)))
       (setf (zoom-x-level pane) scale)
-      (let* ((tr (make-scaling-transformation (zoom-x-level pane) (zoom-y-level pane))))
-        (climi::%%set-sheet-native-transformation tr pane))
+      (let ((pvr (pane-viewport-region pane)))
+        (with-bounding-rectangle* (x1 y1 x2 y2)
+            pvr
+          (declare (ignore x2 y2))
+          (let ((tr (make-scaling-transformation* (zoom-x-level pane) (zoom-y-level pane) x1 y1)))
+            (climi::%%set-sheet-native-transformation tr pane))))
       (repaint-sheet pane +everywhere+))))
 
 (defun zoom-y-callback (gadget scale)
   (let ((frame (pane-frame gadget)))
     (let ((pane (find-pane-named frame 'app)))
       (setf (zoom-y-level pane) scale)
-      (let* ((tr (make-scaling-transformation (zoom-x-level pane) (zoom-y-level pane))))
-        (climi::%%set-sheet-native-transformation tr pane))
+      (let ((pvr (pane-viewport-region pane)))
+        (with-bounding-rectangle* (x1 y1 x2 y2)
+            pvr
+          (declare (ignore x2 y2))
+          (let ((tr (make-scaling-transformation* (zoom-x-level pane) (zoom-y-level pane) x1 y1)))
+            (climi::%%set-sheet-native-transformation tr pane))))
       (repaint-sheet pane +everywhere+))))
 
 (define-application-frame zoom-viewer-app ()
